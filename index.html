@@ -2,150 +2,842 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>BMW 2048 Challenge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMW 2048 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bmw: {
+                            blue: '#1c69d4',
+                            darkblue: '#0066b1',
+                            lightblue: '#6699cc',
+                            white: '#ffffff',
+                            silver: '#f2f2f2',
+                            dark: '#262626',
+                            darker: '#1a1a1a'
+                        }
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(45deg, #1e88e5, #0d47a1);
+        :root {
+            --perspective: 800px;
+            --tile-size: 70px;
+            --gap-size: 12px;
+            --grid-size: 4;
+            --grid-width: calc(var(--tile-size) * var(--grid-size) + var(--gap-size) * (var(--grid-size) + 1));
+            --bmw-blue: #1c69d4;
+            --bmw-dark-blue: #0066b1;
+            --bmw-white: #ffffff;
         }
-        #game-container {
-            background-color: rgba(255,255,255,0.9);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+
+        @media (max-width: 500px) {
+            :root {
+                --tile-size: 60px;
+                --gap-size: 8px;
+            }
         }
-        #grid {
+
+        @media (max-width: 400px) {
+            :root {
+                --tile-size: 50px;
+                --gap-size: 6px;
+            }
+        }
+
+        .game-container {
+            width: var(--grid-width);
+            height: var(--grid-width);
+            position: relative;
+            border-radius: 8px;
+            perspective: var(--perspective);
+            transform-style: preserve-3d;
+        }
+
+        .grid-background {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            background-color: rgba(28, 105, 212, 0.2);
             display: grid;
-            grid-template-columns: repeat(4, 100px);
-            grid-gap: 10px;
+            grid-template-columns: repeat(var(--grid-size), 1fr);
+            grid-template-rows: repeat(var(--grid-size), 1fr);
+            gap: var(--gap-size);
+            padding: var(--gap-size);
+            transform-style: preserve-3d;
         }
+
+        .dark .grid-background {
+            background-color: rgba(28, 105, 212, 0.3);
+        }
+
+        .cell-background {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+        }
+
+        .dark .cell-background {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
         .tile {
-            width: 100px;
-            height: 100px;
-            background-color: #e0e0e0;
+            position: absolute;
+            width: var(--tile-size);
+            height: var(--tile-size);
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 24px;
             font-weight: bold;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-        #score {
-            text-align: center;
             font-size: 24px;
-            margin-bottom: 20px;
-            color: #1e88e5;
+            transition: left 100ms ease, top 100ms ease, opacity 100ms ease, background-color 100ms ease;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            left: 0;
+            top: 0;
+        }
+
+        .tile-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+            border-radius: 6px;
+        }
+
+        /* BMW logo on tiles */
+        .tile::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            bottom: 5px;
+            right: 5px;
+            background-image: conic-gradient(
+                var(--bmw-blue) 0deg 90deg,
+                var(--bmw-white) 90deg 180deg,
+                var(--bmw-blue) 180deg 270deg,
+                var(--bmw-white) 270deg 360deg
+            );
+            border-radius: 50%;
+            opacity: 0.7;
+            transform: rotate(45deg);
+            z-index: 1;
+        }
+
+        /* BMW Series based on tile value */
+        .tile[data-value="2"] { background-color: #e6f2ff; color: #1c69d4; }
+        .tile[data-value="4"] { background-color: #cce5ff; color: #1c69d4; }
+        .tile[data-value="8"] { background-color: #99c2ff; color: white; }
+        .tile[data-value="16"] { background-color: #80b3ff; color: white; }
+        .tile[data-value="32"] { background-color: #66a3ff; color: white; }
+        .tile[data-value="64"] { background-color: #4d94ff; color: white; }
+        .tile[data-value="128"] { background-color: #3385ff; color: white; }
+        .tile[data-value="256"] { background-color: #1a75ff; color: white; }
+        .tile[data-value="512"] { background-color: #0066ff; color: white; }
+        .tile[data-value="1024"] { background-color: #0052cc; color: white; }
+        .tile[data-value="2048"] { background-color: #003d99; color: white; }
+        .tile[data-value="4096"] { background-color: #00297a; color: white; }
+
+        .dark .tile[data-value="2"] { background-color: #1a3d66; color: #cce5ff; }
+        .dark .tile[data-value="4"] { background-color: #1a4780; color: #cce5ff; }
+        .dark .tile[data-value="8"] { background-color: #1a5499; color: white; }
+        .dark .tile[data-value="16"] { background-color: #1a61b3; color: white; }
+        .dark .tile[data-value="32"] { background-color: #1a6ecc; color: white; }
+        .dark .tile[data-value="64"] { background-color: #1a7be6; color: white; }
+        .dark .tile[data-value="128"] { background-color: #3385ff; color: white; }
+        .dark .tile[data-value="256"] { background-color: #4d94ff; color: white; }
+        .dark .tile[data-value="512"] { background-color: #66a3ff; color: white; }
+        .dark .tile[data-value="1024"] { background-color: #80b3ff; color: white; }
+        .dark .tile[data-value="2048"] { background-color: #99c2ff; color: white; }
+        .dark .tile[data-value="4096"] { background-color: #b3d1ff; color: #003d99; }
+
+        .tile.merged {
+            animation: pop 300ms ease;
+            z-index: 10;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .tile.new {
+            animation: appear 300ms ease;
+        }
+
+        @keyframes appear {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .bmw-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--bmw-blue) 0deg 90deg,
+                var(--bmw-white) 90deg 180deg,
+                var(--bmw-blue) 180deg 270deg,
+                var(--bmw-white) 270deg 360deg
+            );
+            transform: rotate(45deg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid white;
+        }
+
+        .dark .bmw-logo {
+            border-color: #333;
+        }
+
+        .tile-label {
+            position: relative;
+            z-index: 2;
+            font-weight: bold;
+        }
+
+        /* Special visual effect for 2048 tile */
+        .tile[data-value="2048"] .tile-inner {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(28, 105, 212, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(28, 105, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(28, 105, 212, 0); }
         }
     </style>
 </head>
-<body>
-    <div id="game-container">
-        <div id="score">Score: 0</div>
-        <div id="grid"></div>
+<body class="bg-white dark:bg-bmw-dark flex flex-col items-center justify-center min-h-screen transition-colors duration-300 p-4">
+    <div class="flex flex-col items-center max-w-md w-full">
+        <div class="flex items-center mb-4">
+            <div class="bmw-logo mr-3"></div>
+            <h1 class="text-3xl font-bold text-bmw-blue dark:text-bmw-lightblue">BMW 2048</h1>
+        </div>
+        
+        <div class="flex justify-between w-full mb-4">
+            <div class="bg-bmw-silver dark:bg-bmw-dark p-2 rounded-lg shadow">
+                <div class="text-sm text-gray-600 dark:text-gray-300">Score</div>
+                <div class="score text-xl font-bold text-bmw-blue dark:text-bmw-lightblue">0</div>
+            </div>
+            <div class="bg-bmw-silver dark:bg-bmw-dark p-2 rounded-lg shadow">
+                <div class="text-sm text-gray-600 dark:text-gray-300">Meilleur</div>
+                <div class="best-score text-xl font-bold text-bmw-blue dark:text-bmw-lightblue">0</div>
+            </div>
+            <button id="new-game" class="bg-bmw-blue hover:bg-bmw-darkblue text-white font-bold py-2 px-4 rounded shadow transition-colors duration-200">
+                Nouveau Jeu
+            </button>
+        </div>
+
+        <div class="game-container shadow-lg transform-gpu mb-6">
+            <div class="grid-background">
+                <!-- Grid cells will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="instructions bg-bmw-silver dark:bg-bmw-dark p-4 rounded-lg shadow-md text-gray-700 dark:text-gray-300 mb-4 text-sm">
+            <p class="font-bold text-center mb-2">Comment jouer:</p>
+            <p class="mb-2">Utilisez les <span class="font-bold">touches fléchées</span> ou <span class="font-bold">glissez</span> pour déplacer les tuiles. Les tuiles avec le même numéro fusionnent en une tuile de niveau supérieur!</p>
+            <p>Atteignez la tuile <span class="font-bold text-bmw-blue dark:text-bmw-lightblue">2048</span> pour gagner!</p>
+        </div>
+    </div>
+
+    <div id="game-over" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-bmw-dark p-6 rounded-lg shadow-lg max-w-md mx-4 text-center">
+            <h2 class="text-2xl font-bold text-bmw-blue dark:text-bmw-lightblue mb-4">Game Over!</h2>
+            <p class="text-gray-700 dark:text-gray-300 mb-4">Votre score: <span class="final-score font-bold"></span></p>
+            <button id="try-again" class="bg-bmw-blue hover:bg-bmw-darkblue text-white font-bold py-2 px-6 rounded shadow transition-colors duration-200">
+                Réessayer
+            </button>
+        </div>
+    </div>
+
+    <div id="win-message" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-bmw-dark p-6 rounded-lg shadow-lg max-w-md mx-4 text-center">
+            <h2 class="text-2xl font-bold text-bmw-blue dark:text-bmw-lightblue mb-4">Félicitations!</h2>
+            <p class="text-gray-700 dark:text-gray-300 mb-4">Vous avez atteint le modèle X7 (2048)!</p>
+            <div class="bmw-logo mx-auto mb-4" style="width: 80px; height: 80px;"></div>
+            <p class="text-gray-700 dark:text-gray-300 mb-4">Votre score: <span class="win-score font-bold"></span></p>
+            <div class="flex justify-center gap-4">
+                <button id="continue-game" class="bg-bmw-blue hover:bg-bmw-darkblue text-white font-bold py-2 px-6 rounded shadow transition-colors duration-200">
+                    Continuer
+                </button>
+                <button id="new-game-win" class="bg-bmw-darkblue hover:bg-bmw-blue text-white font-bold py-2 px-6 rounded shadow transition-colors duration-200">
+                    Nouveau Jeu
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
-        class BMW2048Game {
+        // Check for dark mode
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Game class
+        class Game2048 {
             constructor() {
-                this.bmwModels = [
-                    'i3', 'i4', 'X3', 'X5', 
-                    'M3', 'M4', 'M5', 'M8', 
-                    'Serie 3', 'Serie 5', 'Serie 7'
-                ];
-                this.grid = [];
+                this.gridSize = 4;
+                this.grid = Array(this.gridSize).fill().map(() => Array(this.gridSize).fill(0));
                 this.score = 0;
-                this.initializeGrid();
+                this.bestScore = 0;
+                this.isGameOver = false;
+                this.hasWon = false;
+                this.tilePosMap = new Map(); // Map of tile elements to their positions
+                
+                this.gridElement = document.querySelector('.grid-background');
+                this.scoreElement = document.querySelector('.score');
+                this.bestScoreElement = document.querySelector('.best-score');
+                this.gameOverElement = document.getElementById('game-over');
+                this.finalScoreElement = document.querySelector('.final-score');
+                
+                // Create the grid cells
+                this.createGridCells();
+                
+                // Add event listeners
                 this.setupEventListeners();
-            }
-
-            initializeGrid() {
-                const gridElement = document.getElementById('grid');
-                gridElement.innerHTML = '';
-                for (let i = 0; i < 4; i++) {
-                    this.grid[i] = new Array(4).fill(null);
-                    for (let j = 0; j < 4; j++) {
-                        const tile = document.createElement('div');
-                        tile.classList.add('tile');
-                        tile.dataset.row = i;
-                        tile.dataset.col = j;
-                        gridElement.appendChild(tile);
-                    }
-                }
+                
+                // Initialize the game
+                this.updateBestScore();
                 this.addRandomTile();
                 this.addRandomTile();
-                this.updateGrid();
+                this.updateGridDisplay();
             }
 
-            addRandomTile() {
-                const emptyCells = [];
-                for (let i = 0; i < 4; i++) {
-                    for (let j = 0; j < 4; j++) {
-                        if (!this.grid[i][j]) {
-                            emptyCells.push({row: i, col: j});
-                        }
-                    }
+            createGridCells() {
+                this.gridElement.innerHTML = '';
+                for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell-background';
+                    this.gridElement.appendChild(cell);
                 }
-
-                if (emptyCells.length) {
-                    const {row, col} = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    this.grid[row][col] = this.bmwModels[0];
-                }
-            }
-
-            updateGrid() {
-                const tiles = document.querySelectorAll('.tile');
-                tiles.forEach(tile => {
-                    const row = tile.dataset.row;
-                    const col = tile.dataset.col;
-                    const value = this.grid[row][col];
-                    tile.textContent = value || '';
-                    tile.style.backgroundColor = value ? '#1e88e5' : '#e0e0e0';
-                });
-                document.getElementById('score').textContent = `Score BMW: ${this.score}`;
             }
 
             setupEventListeners() {
-                document.addEventListener('keydown', (e) => {
-                    switch(e.key) {
-                        case 'ArrowUp': this.moveUp(); break;
-                        case 'ArrowDown': this.moveDown(); break;
-                        case 'ArrowLeft': this.moveLeft(); break;
-                        case 'ArrowRight': this.moveRight(); break;
+                // Keyboard events
+                document.addEventListener('keydown', this.handleKeyPress.bind(this));
+                
+                // Touch events for swipe
+                let touchStartX, touchStartY, touchEndX, touchEndY;
+                
+                document.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }, false);
+                
+                document.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].clientX;
+                    touchEndY = e.changedTouches[0].clientY;
+                    this.handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
+                }, false);
+                
+                // New game button
+                document.getElementById('new-game').addEventListener('click', () => this.resetGame());
+                document.getElementById('try-again').addEventListener('click', () => {
+                    this.gameOverElement.classList.add('hidden');
+                    this.resetGame();
+                });
+
+                // 3D effect based on mouse position or device orientation
+                const gameContainer = document.querySelector('.game-container');
+                
+                document.addEventListener('mousemove', (e) => {
+                    const rect = gameContainer.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    // Limiter l'inclinaison à un maximum de 10 degrés
+                    const rotateX = Math.max(-10, Math.min(10, (e.clientY - centerY) / 20));
+                    const rotateY = Math.max(-10, Math.min(10, (centerX - e.clientX) / 20));
+                    
+                    gameContainer.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+                
+                // Reset to flat when mouse leaves
+                document.addEventListener('mouseleave', () => {
+                    gameContainer.style.transform = 'rotateX(0deg) rotateY(0deg)';
+                });
+                
+                // Device orientation for mobile
+                window.addEventListener('deviceorientation', (e) => {
+                    if (e.beta !== null && e.gamma !== null) {
+                        // Limiter l'inclinaison à un maximum de 10 degrés
+                        const rotateX = Math.max(-10, Math.min(10, e.beta / 5)); // Tilt front-to-back
+                        const rotateY = Math.max(-10, Math.min(10, e.gamma / 5)); // Tilt left-to-right
+                        
+                        gameContainer.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
                     }
                 });
             }
 
-            // Additional game logic methods would be implemented here
-            moveUp() {
-                // Left for you to complete full game mechanics
-                this.addRandomTile();
-                this.updateGrid();
+            handleKeyPress(e) {
+                if (this.isGameOver) return;
+                
+                let moved = false;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        moved = this.moveUp();
+                        e.preventDefault();
+                        break;
+                    case 'ArrowDown':
+                        moved = this.moveDown();
+                        e.preventDefault();
+                        break;
+                    case 'ArrowLeft':
+                        moved = this.moveLeft();
+                        e.preventDefault();
+                        break;
+                    case 'ArrowRight':
+                        moved = this.moveRight();
+                        e.preventDefault();
+                        break;
+                }
+                
+                if (moved) {
+                    this.addRandomTile();
+                    this.updateGridDisplay();
+                    this.checkGameOver();
+                }
             }
 
-            moveDown() {
-                this.addRandomTile();
-                this.updateGrid();
+            handleSwipe(startX, startY, endX, endY) {
+                if (this.isGameOver) return;
+                
+                const dx = endX - startX;
+                const dy = endY - startY;
+                const absDx = Math.abs(dx);
+                const absDy = Math.abs(dy);
+                
+                // Minimum swipe distance to be considered a valid swipe
+                const minDistance = 30;
+                
+                let moved = false;
+                
+                if (Math.max(absDx, absDy) > minDistance) {
+                    if (absDx > absDy) {
+                        // Horizontal swipe
+                        if (dx > 0) {
+                            moved = this.moveRight();
+                        } else {
+                            moved = this.moveLeft();
+                        }
+                    } else {
+                        // Vertical swipe
+                        if (dy > 0) {
+                            moved = this.moveDown();
+                        } else {
+                            moved = this.moveUp();
+                        }
+                    }
+                }
+                
+                if (moved) {
+                    this.addRandomTile();
+                    this.updateGridDisplay();
+                    this.checkGameOver();
+                }
             }
 
             moveLeft() {
-                this.addRandomTile();
-                this.updateGrid();
+                let moved = false;
+                
+                for (let row = 0; row < this.gridSize; row++) {
+                    const originalRow = [...this.grid[row]];
+                    this.grid[row] = this.compressRow(this.grid[row]);
+                    this.grid[row] = this.mergeRow(this.grid[row]);
+                    this.grid[row] = this.compressRow(this.grid[row]);
+                    
+                    if (!moved && !this.areRowsEqual(originalRow, this.grid[row])) {
+                        moved = true;
+                    }
+                }
+                
+                return moved;
             }
 
             moveRight() {
+                let moved = false;
+                
+                for (let row = 0; row < this.gridSize; row++) {
+                    const originalRow = [...this.grid[row]];
+                    this.grid[row] = this.compressRow(this.grid[row].reverse()).reverse();
+                    this.grid[row] = this.mergeRow(this.grid[row].reverse()).reverse();
+                    this.grid[row] = this.compressRow(this.grid[row].reverse()).reverse();
+                    
+                    if (!moved && !this.areRowsEqual(originalRow, this.grid[row])) {
+                        moved = true;
+                    }
+                }
+                
+                return moved;
+            }
+
+            moveUp() {
+                let moved = false;
+                
+                for (let col = 0; col < this.gridSize; col++) {
+                    const originalCol = Array(this.gridSize).fill().map((_, i) => this.grid[i][col]);
+                    
+                    // Extract the column into an array
+                    let column = Array(this.gridSize).fill().map((_, i) => this.grid[i][col]);
+                    
+                    // Compress, merge, and compress again
+                    column = this.compressRow(column);
+                    column = this.mergeRow(column);
+                    column = this.compressRow(column);
+                    
+                    // Put the column back
+                    for (let row = 0; row < this.gridSize; row++) {
+                        this.grid[row][col] = column[row];
+                    }
+                    
+                    if (!moved && !this.areRowsEqual(originalCol, column)) {
+                        moved = true;
+                    }
+                }
+                
+                return moved;
+            }
+
+            moveDown() {
+                let moved = false;
+                
+                for (let col = 0; col < this.gridSize; col++) {
+                    const originalCol = Array(this.gridSize).fill().map((_, i) => this.grid[i][col]);
+                    
+                    // Extract the column into an array
+                    let column = Array(this.gridSize).fill().map((_, i) => this.grid[i][col]);
+                    
+                    // Reverse, compress, merge, compress again, and reverse back
+                    column = column.reverse();
+                    column = this.compressRow(column);
+                    column = this.mergeRow(column);
+                    column = this.compressRow(column);
+                    column = column.reverse();
+                    
+                    // Put the column back
+                    for (let row = 0; row < this.gridSize; row++) {
+                        this.grid[row][col] = column[row];
+                    }
+                    
+                    if (!moved && !this.areRowsEqual(originalCol, Array(this.gridSize).fill().map((_, i) => column[this.gridSize - 1 - i]))) {
+                        moved = true;
+                    }
+                }
+                
+                return moved;
+            }
+
+            compressRow(row) {
+                const newRow = Array(this.gridSize).fill(0);
+                let position = 0;
+                
+                // Move all non-zero elements to the front
+                for (let i = 0; i < this.gridSize; i++) {
+                    if (row[i] !== 0) {
+                        newRow[position++] = row[i];
+                    }
+                }
+                
+                return newRow;
+            }
+
+            mergeRow(row) {
+                // Garder la trace des tuiles qui ont été fusionnées
+                this.mergedTiles = this.mergedTiles || [];
+                
+                for (let i = 0; i < this.gridSize - 1; i++) {
+                    if (row[i] !== 0 && row[i] === row[i + 1]) {
+                        const newValue = row[i] * 2;
+                        row[i] = newValue;
+                        row[i + 1] = 0;
+                        this.score += newValue;
+                        this.updateScore();
+                        
+                        // Mémoriser cette fusion pour l'animation
+                        this.mergedTiles.push({value: newValue, position: i});
+                        
+                        // Check for win
+                        if (newValue === 2048 && !this.hasWon) {
+                            this.hasWon = true;
+                            this.showWinMessage();
+                        }
+                    }
+                }
+                
+                return row;
+            }
+
+            areRowsEqual(row1, row2) {
+                for (let i = 0; i < this.gridSize; i++) {
+                    if (row1[i] !== row2[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            addRandomTile() {
+                // Find all empty cells
+                const emptyCells = [];
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        if (this.grid[row][col] === 0) {
+                            emptyCells.push({ row, col });
+                        }
+                    }
+                }
+                
+                if (emptyCells.length > 0) {
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    this.grid[randomCell.row][randomCell.col] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+
+            updateGridDisplay() {
+                const gameContainer = document.querySelector('.game-container');
+                
+                // Clear existing tiles
+                const existingTiles = document.querySelectorAll('.tile');
+                const tilesToKeep = new Set();
+                
+                // Update or create tiles
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        const value = this.grid[row][col];
+                        
+                        if (value !== 0) {
+                            const position = { row, col };
+                            const tileKey = `${row}-${col}-${value}`;
+                            let tile = null;
+                            
+                            // Check if there's a tile already at this position
+                            for (const [existingTile, pos] of this.tilePosMap.entries()) {
+                                if (pos.row === row && pos.col === col) {
+                                    tile = existingTile;
+                                    break;
+                                }
+                            }
+                            
+                            if (!tile) {
+                                // Create a new tile
+                                tile = document.createElement('div');
+                                tile.className = 'tile new';
+                                tile.dataset.value = value;
+                                
+                                const tileInner = document.createElement('div');
+                                tileInner.className = 'tile-inner';
+                                
+                                const tileLabel = document.createElement('div');
+                                tileLabel.className = 'tile-label';
+                                
+                                // For BMW theme, use car models instead of numbers
+                                if (value <= 4096) {
+                                    tileLabel.textContent = this.getBMWModel(value);
+                                } else {
+                                    tileLabel.textContent = value;
+                                }
+                                
+                                tileInner.appendChild(tileLabel);
+                                tile.appendChild(tileInner);
+                                gameContainer.appendChild(tile);
+                                
+                                this.tilePosMap.set(tile, position);
+                            } else {
+                                // Update existing tile
+                                // Vérifier si cette tuile a été fusionnée
+                                const isMerged = this.mergedTiles && this.mergedTiles.some(
+                                    merged => merged.value === value && 
+                                    ((merged.position === col && merged.direction === 'horizontal') || 
+                                    (merged.position === row && merged.direction === 'vertical'))
+                                );
+                                
+                                if (isMerged && !tile.classList.contains('merged')) {
+                                    tile.classList.remove('new');
+                                    void tile.offsetWidth; // Forcer un reflow pour réinitialiser l'animation
+                                    tile.classList.add('merged');
+                                }
+                                
+                                tile.dataset.value = value;
+                                const tileLabel = tile.querySelector('.tile-label');
+                                
+                                if (value <= 4096) {
+                                    tileLabel.textContent = this.getBMWModel(value);
+                                } else {
+                                    tileLabel.textContent = value;
+                                }
+                                
+                                this.tilePosMap.set(tile, position);
+                            }
+                            
+                            tilesToKeep.add(tile);
+                            
+                            // Position the tile
+                            const tileSize = getComputedStyle(document.documentElement).getPropertyValue('--tile-size').trim();
+                            const gapSize = getComputedStyle(document.documentElement).getPropertyValue('--gap-size').trim();
+                            
+                            const pixelTileSize = parseFloat(tileSize);
+                            const pixelGapSize = parseFloat(gapSize);
+                            
+                            const x = pixelGapSize + col * (pixelTileSize + pixelGapSize);
+                            const y = pixelGapSize + row * (pixelTileSize + pixelGapSize);
+                            
+                            // Assurez-vous que le positionnement est absolu
+                            tile.style.left = `${x}px`;
+                            tile.style.top = `${y}px`;
+                        }
+                    }
+                }
+                
+                // Remove tiles that are no longer on the grid
+                existingTiles.forEach(tile => {
+                    if (!tilesToKeep.has(tile)) {
+                        tile.remove();
+                        this.tilePosMap.delete(tile);
+                    }
+                });
+                
+                // Réinitialiser la liste des tuiles fusionnées pour le prochain mouvement
+                this.mergedTiles = [];
+            }
+
+            getBMWModel(value) {
+                // Map tile values to BMW models
+                const modelMap = {
+                    2: 'M1',
+                    4: 'M2',
+                    8: 'M3',
+                    16: 'M4',
+                    32: 'M5',
+                    64: 'M6',
+                    128: 'M8',
+                    256: 'X1',
+                    512: 'X3',
+                    1024: 'X5',
+                    2048: 'X7',
+                    4096: 'i8'
+                };
+                
+                return modelMap[value] || value.toString();
+            }
+
+            updateScore() {
+                this.scoreElement.textContent = this.score;
+                
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    this.updateBestScore();
+                }
+            }
+
+            updateBestScore() {
+                this.bestScoreElement.textContent = this.bestScore;
+            }
+
+            checkGameOver() {
+                // Check if the grid is full
+                let isGridFull = true;
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        if (this.grid[row][col] === 0) {
+                            isGridFull = false;
+                            break;
+                        }
+                    }
+                    if (!isGridFull) break;
+                }
+                
+                if (!isGridFull) return false;
+                
+                // Check if any adjacent tiles can be merged
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        const value = this.grid[row][col];
+                        
+                        // Check right neighbor
+                        if (col < this.gridSize - 1 && this.grid[row][col + 1] === value) {
+                            return false;
+                        }
+                        
+                        // Check bottom neighbor
+                        if (row < this.gridSize - 1 && this.grid[row + 1][col] === value) {
+                            return false;
+                        }
+                    }
+                }
+                
+                // If we get here, the game is over
+                this.isGameOver = true;
+                this.showGameOver();
+                return true;
+            }
+
+            showGameOver() {
+                this.finalScoreElement.textContent = this.score;
+                this.gameOverElement.classList.remove('hidden');
+            }
+            
+            showWinMessage() {
+                const winMessageElement = document.getElementById('win-message');
+                const winScoreElement = document.querySelector('.win-score');
+                winScoreElement.textContent = this.score;
+                winMessageElement.classList.remove('hidden');
+                
+                document.getElementById('continue-game').addEventListener('click', () => {
+                    winMessageElement.classList.add('hidden');
+                });
+                
+                document.getElementById('new-game-win').addEventListener('click', () => {
+                    winMessageElement.classList.add('hidden');
+                    this.resetGame();
+                });
+            }
+
+            resetGame() {
+                this.grid = Array(this.gridSize).fill().map(() => Array(this.gridSize).fill(0));
+                this.score = 0;
+                this.isGameOver = false;
+                this.hasWon = false;
+                
+                // Clear all tiles
+                const existingTiles = document.querySelectorAll('.tile');
+                existingTiles.forEach(tile => {
+                    tile.remove();
+                });
+                this.tilePosMap.clear();
+                
+                this.updateScore();
                 this.addRandomTile();
-                this.updateGrid();
+                this.addRandomTile();
+                this.updateGridDisplay();
             }
         }
 
-        new BMW2048Game();
+        // Initialize game when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const game = new Game2048();
+        });
     </script>
 </body>
 </html>
