@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>BMW 2048 Challenge</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(45deg, #1e88e5, #0d47a1);
+        }
+        #game-container {
+            background-color: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-gap: 10px;
+        }
+        .tile {
+            width: 100px;
+            height: 100px;
+            background-color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        #score {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #1e88e5;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="score">Score: 0</div>
+        <div id="grid"></div>
+    </div>
+
+    <script>
+        class BMW2048Game {
+            constructor() {
+                this.bmwModels = [
+                    'i3', 'i4', 'X3', 'X5', 
+                    'M3', 'M4', 'M5', 'M8', 
+                    'Serie 3', 'Serie 5', 'Serie 7'
+                ];
+                this.grid = [];
+                this.score = 0;
+                this.initializeGrid();
+                this.setupEventListeners();
+            }
+
+            initializeGrid() {
+                const gridElement = document.getElementById('grid');
+                gridElement.innerHTML = '';
+                for (let i = 0; i < 4; i++) {
+                    this.grid[i] = new Array(4).fill(null);
+                    for (let j = 0; j < 4; j++) {
+                        const tile = document.createElement('div');
+                        tile.classList.add('tile');
+                        tile.dataset.row = i;
+                        tile.dataset.col = j;
+                        gridElement.appendChild(tile);
+                    }
+                }
+                this.addRandomTile();
+                this.addRandomTile();
+                this.updateGrid();
+            }
+
+            addRandomTile() {
+                const emptyCells = [];
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        if (!this.grid[i][j]) {
+                            emptyCells.push({row: i, col: j});
+                        }
+                    }
+                }
+
+                if (emptyCells.length) {
+                    const {row, col} = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    this.grid[row][col] = this.bmwModels[0];
+                }
+            }
+
+            updateGrid() {
+                const tiles = document.querySelectorAll('.tile');
+                tiles.forEach(tile => {
+                    const row = tile.dataset.row;
+                    const col = tile.dataset.col;
+                    const value = this.grid[row][col];
+                    tile.textContent = value || '';
+                    tile.style.backgroundColor = value ? '#1e88e5' : '#e0e0e0';
+                });
+                document.getElementById('score').textContent = `Score BMW: ${this.score}`;
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => {
+                    switch(e.key) {
+                        case 'ArrowUp': this.moveUp(); break;
+                        case 'ArrowDown': this.moveDown(); break;
+                        case 'ArrowLeft': this.moveLeft(); break;
+                        case 'ArrowRight': this.moveRight(); break;
+                    }
+                });
+            }
+
+            // Additional game logic methods would be implemented here
+            moveUp() {
+                // Left for you to complete full game mechanics
+                this.addRandomTile();
+                this.updateGrid();
+            }
+
+            moveDown() {
+                this.addRandomTile();
+                this.updateGrid();
+            }
+
+            moveLeft() {
+                this.addRandomTile();
+                this.updateGrid();
+            }
+
+            moveRight() {
+                this.addRandomTile();
+                this.updateGrid();
+            }
+        }
+
+        new BMW2048Game();
+    </script>
+</body>
+</html>
